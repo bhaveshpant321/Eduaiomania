@@ -3,7 +3,7 @@ metadata:
   name: "project-eudaimonia"
   description: "A digital twin simulating the psychological impact of recommendation algorithms on human flourishing."
   tags: ["rl", "openenv", "simulation", "psychology"]
-  maintainers: ["Meta-OpenEnv-Hacker"]
+  maintainers: ["Bhavesh"]
 
 environment:
   docker_image: "project-eudaimonia:latest"

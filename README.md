@@ -1,13 +1,3 @@
----
-title: Project Eudaimonia
-emoji: 🌿
-colorFrom: blue
-colorTo: green
-sdk: docker
-app_port: 7860
-pinned: false
----
-
 # 🌿 Project Eudaimonia: An OpenEnv RL Benchmark
 
 **Challenge the "Next-Click" Optimization Paradigm.** 
