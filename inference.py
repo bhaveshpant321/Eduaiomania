@@ -3,9 +3,13 @@ import textwrap
 import json
 import urllib.error
 import urllib.request
-from typing import List, Optional
+import urllib.parse
+from typing import Any, List, Optional
 
-from openai import OpenAI
+try:
+    from openai import OpenAI
+except ModuleNotFoundError:
+    OpenAI = None
 
 API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
 LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
@@ -64,10 +68,72 @@ def post_json(url: str, payload: Optional[dict] = None, timeout: int = 20) -> di
         return json.loads(raw) if raw else {}
 
 
-def ensure_proxy_call(client: OpenAI) -> None:
+def _http_chat_completion(
+    api_base_url: str,
+    api_key: str,
+    model: str,
+    messages: list,
+    temperature: float,
+    max_tokens: int,
+) -> str:
+    endpoint = f"{api_base_url.rstrip('/')}/chat/completions"
+    payload = {
+        "model": model,
+        "messages": messages,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+    }
+    req = urllib.request.Request(
+        url=endpoint,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        raw = resp.read().decode("utf-8")
+        data = json.loads(raw) if raw else {}
+    return ((data.get("choices") or [{}])[0].get("message") or {}).get("content", "")
+
+
+def _chat_completion(
+    client: Optional[Any],
+    api_base_url: str,
+    api_key: str,
+    model: str,
+    messages: list,
+    temperature: float,
+    max_tokens: int,
+) -> str:
+    if client is not None:
+        completion = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+        return (completion.choices[0].message.content or "").strip()
+
+    # Fallback prevents import-time crashes in validator images missing openai.
+    return _http_chat_completion(
+        api_base_url=api_base_url,
+        api_key=api_key,
+        model=model,
+        messages=messages,
+        temperature=temperature,
+        max_tokens=max_tokens,
+    ).strip()
+
+
+def ensure_proxy_call(client: Optional[Any], api_base_url: str, api_key: str) -> None:
     """Force at least one successful LLM proxy request so validator can observe usage."""
     try:
-        client.chat.completions.create(
+        _chat_completion(
+            client=client,
+            api_base_url=api_base_url,
+            api_key=api_key,
             model=MODEL_NAME,
             messages=[
                 {"role": "system", "content": "Reply with exactly 0."},
@@ -109,7 +175,16 @@ def choose_fallback_candidate(candidates: list, health: dict, cortisol: float, a
     best = max(valid, key=lambda c: (val(c, "growth", 0.0) + val(c, "connection", 0.0) - val(c, "drain", 0.0)))
     return int(best.get("id", 0))
 
-def get_model_message(client: OpenAI, step: int, candidates: list, health: dict, cortisol: float, action_mask: list) -> int:
+def get_model_message(
+    client: Optional[Any],
+    api_base_url: str,
+    api_key: str,
+    step: int,
+    candidates: list,
+    health: dict,
+    cortisol: float,
+    action_mask: list,
+) -> int:
     valid_candidates = [
         c for i, c in enumerate(candidates)
         if i < len(action_mask) and bool(action_mask[i])
@@ -120,7 +195,10 @@ def get_model_message(client: OpenAI, step: int, candidates: list, health: dict,
     user_prompt = f"Step: {step}\\nHealth Metrics: {health_str}\\nCortisol: {cortisol:.2f}\\nValid Candidates: {candidates_str}\\nChoice ID:"
     
     try:
-        completion = client.chat.completions.create(
+        text = _chat_completion(
+            client=client,
+            api_base_url=api_base_url,
+            api_key=api_key,
             model=MODEL_NAME,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
@@ -129,7 +207,6 @@ def get_model_message(client: OpenAI, step: int, candidates: list, health: dict,
             temperature=0.7,
             max_tokens=10,
         )
-        text = completion.choices[0].message.content.strip()
         return int(text)
     except Exception as exc:
         print(f"[DEBUG] Model request failed or bad parse: {exc}", flush=True)
@@ -141,14 +218,15 @@ def main() -> None:
     if not api_key:
         raise RuntimeError("Missing API credentials: set HF_TOKEN or API_KEY")
 
-    client = OpenAI(base_url=api_base_url, api_key=api_key)
+    client = OpenAI(base_url=api_base_url, api_key=api_key) if OpenAI is not None else None
     
     rewards: List[float] = []
     steps_taken = 0
     score = 0.0
+    success = False
     
     log_start(task=TASK_NAME, env=BENCHMARK, model=MODEL_NAME)
-    ensure_proxy_call(client)
+    ensure_proxy_call(client, api_base_url, api_key)
     
     # Reset Environment
     try:
@@ -166,7 +244,16 @@ def main() -> None:
             action_mask = obs.get("action_mask", [True] * len(candidates))
             
             # Request LLM Action
-            chosen_id = get_model_message(client, step, candidates, health, cortisol, action_mask)
+            chosen_id = get_model_message(
+                client,
+                api_base_url,
+                api_key,
+                step,
+                candidates,
+                health,
+                cortisol,
+                action_mask,
+            )
             
             # Step Environment
             action_payload = {"selected_item_id": chosen_id}
