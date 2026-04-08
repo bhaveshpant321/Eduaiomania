@@ -10,7 +10,7 @@ try:
 except Exception:
     OpenAI = None
 
-HF_TOKEN = os.getenv("HF_TOKEN")
+API_KEY = os.getenv("API_KEY") or os.getenv("HF_TOKEN")
 LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
@@ -124,16 +124,20 @@ def get_model_message(client, step: int, candidates: list, health: dict, cortiso
         return choose_fallback_candidate(candidates, health, cortisol, action_mask)
 
 def main() -> None:
+    # Use validator-injected proxy settings when available.
+    api_base_url = os.environ.get("API_BASE_URL", API_BASE_URL)
+    api_key = os.environ.get("API_KEY", API_KEY)
+
     client = None
-    if OpenAI is not None and HF_TOKEN:
+    if OpenAI is not None and api_key:
         try:
-            client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
+            client = OpenAI(base_url=api_base_url, api_key=api_key)
         except Exception as exc:
             print(f"[DEBUG] OpenAI client init failed: {exc}", flush=True)
     elif OpenAI is None:
         print("[DEBUG] openai package not installed; using fallback policy", flush=True)
     else:
-        print("[DEBUG] HF_TOKEN missing; using fallback policy", flush=True)
+        print("[DEBUG] API_KEY missing; using fallback policy", flush=True)
     
     rewards: List[float] = []
     steps_taken = 0
