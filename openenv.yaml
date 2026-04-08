@@ -1,4 +1,10 @@
 version: "1.0"
+spec_version: 1
+name: "project-eudaimonia"
+type: "space"
+runtime: "fastapi"
+app: "server.app:app"
+port: 7860
 metadata:
   name: "project-eudaimonia"
   description: "A digital twin simulating the psychological impact of recommendation algorithms on human flourishing."
@@ -9,10 +15,31 @@ environment:
   docker_image: "project-eudaimonia:latest"
   entrypoint: "server.app:app"
 
+graders:
+  easy-survival-grader:
+    type: "python"
+    module: "server.grader"
+    reward_fn: "Grader.get_reward"
+    termination_fn: "Grader.get_termination_status"
+    task_name: "easy-survival"
+  medium-eudaimonia-grader:
+    type: "python"
+    module: "server.grader"
+    reward_fn: "Grader.get_reward"
+    termination_fn: "Grader.get_termination_status"
+    task_name: "medium-eudaimonia"
+  hard-detox-grader:
+    type: "python"
+    module: "server.grader"
+    reward_fn: "Grader.get_reward"
+    termination_fn: "Grader.get_termination_status"
+    task_name: "hard-detox"
+
 tasks:
   - id: "easy-survival"
     description: "Keep the user alive and cortisol below the burnout threshold for 20 steps."
     difficulty: "easy"
+    grader_id: "easy-survival-grader"
     grader:
       type: "python"
       module: "server.grader"
@@ -22,6 +49,7 @@ tasks:
   - id: "medium-eudaimonia"
     description: "Maximize wisdom while maintaining high energy. Requires a balanced content diet."
     difficulty: "medium"
+    grader_id: "medium-eudaimonia-grader"
     grader:
       type: "python"
       module: "server.grader"
@@ -31,6 +59,7 @@ tasks:
   - id: "hard-detox"
     description: "The user starts in a state of high brain-rot and rage-bait. Guide them back to high autonomy and relatedness."
     difficulty: "hard"
+    grader_id: "hard-detox-grader"
     grader:
       type: "python"
       module: "server.grader"
