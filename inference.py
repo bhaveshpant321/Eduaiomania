@@ -7,7 +7,7 @@ from typing import List, Optional
 
 from openai import OpenAI
 
-API_KEY = os.getenv("API_KEY")
+API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
 LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
@@ -65,7 +65,7 @@ def post_json(url: str, payload: Optional[dict] = None, timeout: int = 20) -> di
 
 
 def ensure_proxy_call(client: OpenAI) -> None:
-    """Force at least one LLM proxy request so validator can observe usage."""
+    """Force at least one successful LLM proxy request so validator can observe usage."""
     try:
         client.chat.completions.create(
             model=MODEL_NAME,
@@ -77,7 +77,8 @@ def ensure_proxy_call(client: OpenAI) -> None:
             max_tokens=1,
         )
     except Exception as exc:
-        print(f"[DEBUG] warmup LLM call failed: {exc}", flush=True)
+        # Do not silently continue; otherwise run may pass with zero observed proxy calls.
+        raise RuntimeError(f"LLM proxy warmup call failed: {exc}") from exc
 
 
 def choose_fallback_candidate(candidates: list, health: dict, cortisol: float, action_mask: list) -> int:
@@ -135,9 +136,11 @@ def get_model_message(client: OpenAI, step: int, candidates: list, health: dict,
         return choose_fallback_candidate(candidates, health, cortisol, action_mask)
 
 def main() -> None:
-    # Submission validator expects these exact environment variables.
-    api_base_url = os.environ["API_BASE_URL"]
-    api_key = os.environ["API_KEY"]
+    api_base_url = os.getenv("API_BASE_URL") or "https://router.huggingface.co/v1"
+    api_key = API_KEY
+    if not api_key:
+        raise RuntimeError("Missing API credentials: set HF_TOKEN or API_KEY")
+
     client = OpenAI(base_url=api_base_url, api_key=api_key)
     
     rewards: List[float] = []
