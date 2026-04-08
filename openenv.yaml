@@ -1,0 +1,21 @@
+version: "1.0"
+metadata:
+  name: "project-eudaimonia"
+  description: "A digital twin simulating the psychological impact of recommendation algorithms on human flourishing."
+  tags: ["rl", "openenv", "simulation", "psychology"]
+  maintainers: ["Meta-OpenEnv-Hacker"]
+
+environment:
+  docker_image: "project-eudaimonia:latest"
+  entrypoint: "server.app:app"
+
+tasks:
+  - id: "easy-survival"
+    description: "Keep the user alive and cortisol below the burnout threshold for 20 steps."
+    difficulty: "easy"
+  - id: "medium-eudaimonia"
+    description: "Maximize wisdom while maintaining high energy. Requires a balanced content diet."
+    difficulty: "medium"
+  - id: "hard-detox"
+    description: "The user starts in a state of high brain-rot and rage-bait. Guide them back to high autonomy and relatedness."
+    difficulty: "hard"
