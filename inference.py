@@ -5,12 +5,9 @@ import urllib.error
 import urllib.request
 from typing import List, Optional
 
-try:
-    from openai import OpenAI
-except Exception:
-    OpenAI = None
+from openai import OpenAI
 
-API_KEY = os.getenv("API_KEY") or os.getenv("HF_TOKEN")
+API_KEY = os.getenv("API_KEY")
 LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
@@ -95,13 +92,10 @@ def choose_fallback_candidate(candidates: list, health: dict, cortisol: float, a
     best = max(valid, key=lambda c: (val(c, "growth", 0.0) + val(c, "connection", 0.0) - val(c, "drain", 0.0)))
     return int(best.get("id", 0))
 
-def get_model_message(client, step: int, candidates: list, health: dict, cortisol: float, action_mask: list) -> int:
+def get_model_message(client: OpenAI, step: int, candidates: list, health: dict, cortisol: float, action_mask: list) -> int:
     valid_candidates = [c for i, c in enumerate(candidates) if action_mask[i]]
     if not valid_candidates:
         return candidates[0]["id"] if candidates else 0
-
-    if client is None:
-        return choose_fallback_candidate(candidates, health, cortisol, action_mask)
 
     candidates_str = json.dumps(valid_candidates, indent=2)
     health_str = json.dumps(health, indent=2)
@@ -124,20 +118,10 @@ def get_model_message(client, step: int, candidates: list, health: dict, cortiso
         return choose_fallback_candidate(candidates, health, cortisol, action_mask)
 
 def main() -> None:
-    # Use validator-injected proxy settings when available.
-    api_base_url = os.environ.get("API_BASE_URL", API_BASE_URL)
-    api_key = os.environ.get("API_KEY", API_KEY)
-
-    client = None
-    if OpenAI is not None and api_key:
-        try:
-            client = OpenAI(base_url=api_base_url, api_key=api_key)
-        except Exception as exc:
-            print(f"[DEBUG] OpenAI client init failed: {exc}", flush=True)
-    elif OpenAI is None:
-        print("[DEBUG] openai package not installed; using fallback policy", flush=True)
-    else:
-        print("[DEBUG] API_KEY missing; using fallback policy", flush=True)
+    # Submission validator expects these exact environment variables.
+    api_base_url = os.environ["API_BASE_URL"]
+    api_key = os.environ["API_KEY"]
+    client = OpenAI(base_url=api_base_url, api_key=api_key)
     
     rewards: List[float] = []
     steps_taken = 0
