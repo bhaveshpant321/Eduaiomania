@@ -4,7 +4,11 @@ import json
 import urllib.error
 import urllib.request
 from typing import List, Optional
-from openai import OpenAI
+
+try:
+    from openai import OpenAI
+except Exception:
+    OpenAI = None
 
 HF_TOKEN = os.getenv("HF_TOKEN")
 LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
@@ -62,10 +66,42 @@ def post_json(url: str, payload: Optional[dict] = None, timeout: int = 20) -> di
         raw = resp.read().decode("utf-8")
         return json.loads(raw) if raw else {}
 
-def get_model_message(client: OpenAI, step: int, candidates: list, health: dict, cortisol: float, action_mask: list) -> int:
+
+def choose_fallback_candidate(candidates: list, health: dict, cortisol: float, action_mask: list) -> int:
+    valid = [c for i, c in enumerate(candidates) if i < len(action_mask) and action_mask[i]]
+    if not valid:
+        return candidates[0]["id"] if candidates else 0
+
+    dopamine = float(health.get("dopamine", 0.5) or 0.5)
+    energy = float(health.get("energy", 0.5) or 0.5)
+
+    def val(item: dict, key: str, default: float = 0.0) -> float:
+        try:
+            return float(item.get(key, default) or default)
+        except Exception:
+            return default
+
+    # High cortisol or low energy: prioritize low intensity/drain and restorative content.
+    if cortisol > 0.6 or energy < 0.35:
+        best = min(valid, key=lambda c: (val(c, "intensity", 1.0) + val(c, "drain", 1.0), -val(c, "growth", 0.0)))
+        return int(best.get("id", 0))
+
+    # Low dopamine (bored): allow a moderate intensity bump while limiting drain.
+    if dopamine < 0.3:
+        best = max(valid, key=lambda c: (val(c, "intensity", 0.0) - 0.8 * val(c, "drain", 0.0)))
+        return int(best.get("id", 0))
+
+    # Balanced mode: maximize growth/connection with a drain penalty.
+    best = max(valid, key=lambda c: (val(c, "growth", 0.0) + val(c, "connection", 0.0) - val(c, "drain", 0.0)))
+    return int(best.get("id", 0))
+
+def get_model_message(client, step: int, candidates: list, health: dict, cortisol: float, action_mask: list) -> int:
     valid_candidates = [c for i, c in enumerate(candidates) if action_mask[i]]
     if not valid_candidates:
         return candidates[0]["id"] if candidates else 0
+
+    if client is None:
+        return choose_fallback_candidate(candidates, health, cortisol, action_mask)
 
     candidates_str = json.dumps(valid_candidates, indent=2)
     health_str = json.dumps(health, indent=2)
@@ -85,11 +121,19 @@ def get_model_message(client: OpenAI, step: int, candidates: list, health: dict,
         return int(text)
     except Exception as exc:
         print(f"[DEBUG] Model request failed or bad parse: {exc}", flush=True)
-        # fallback to first valid candidate
-        return valid_candidates[0]["id"]
+        return choose_fallback_candidate(candidates, health, cortisol, action_mask)
 
 def main() -> None:
-    client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
+    client = None
+    if OpenAI is not None and HF_TOKEN:
+        try:
+            client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
+        except Exception as exc:
+            print(f"[DEBUG] OpenAI client init failed: {exc}", flush=True)
+    elif OpenAI is None:
+        print("[DEBUG] openai package not installed; using fallback policy", flush=True)
+    else:
+        print("[DEBUG] HF_TOKEN missing; using fallback policy", flush=True)
     
     rewards: List[float] = []
     steps_taken = 0
