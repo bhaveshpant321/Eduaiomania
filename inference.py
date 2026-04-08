@@ -1,7 +1,8 @@
 import os
 import textwrap
 import json
-import requests
+import urllib.error
+import urllib.request
 from typing import List, Optional
 from openai import OpenAI
 
@@ -45,6 +46,22 @@ def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> No
     rewards_str = ",".join(f"{r:.2f}" for r in rewards)
     print(f"[END] success={str(success).lower()} steps={steps} score={score:.3f} rewards={rewards_str}", flush=True)
 
+
+def post_json(url: str, payload: Optional[dict] = None, timeout: int = 20) -> dict:
+    body = None
+    if payload is not None:
+        body = json.dumps(payload).encode("utf-8")
+
+    req = urllib.request.Request(
+        url=url,
+        data=body,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        raw = resp.read().decode("utf-8")
+        return json.loads(raw) if raw else {}
+
 def get_model_message(client: OpenAI, step: int, candidates: list, health: dict, cortisol: float, action_mask: list) -> int:
     valid_candidates = [c for i, c in enumerate(candidates) if action_mask[i]]
     if not valid_candidates:
@@ -82,10 +99,8 @@ def main() -> None:
     
     # Reset Environment
     try:
-        res = requests.post(f"{ENV_URL}/reset")
-        res.raise_for_status()
-        obs = res.json()
-    except requests.exceptions.RequestException as e:
+        obs = post_json(f"{ENV_URL}/reset")
+    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError) as e:
         print(f"[DEBUG] Failed to connect to Env Server at {ENV_URL}: {e}")
         log_end(success=False, steps=0, score=0.0, rewards=[])
         return
@@ -102,10 +117,7 @@ def main() -> None:
             
             # Step Environment
             action_payload = {"selected_item_id": chosen_id}
-            step_res = requests.post(f"{ENV_URL}/step", json=action_payload)
-            step_res.raise_for_status()
-            
-            result = step_res.json()
+            result = post_json(f"{ENV_URL}/step", payload=action_payload)
             obs = result["observation"]
             reward = result["reward"]
             done = result["done"]
