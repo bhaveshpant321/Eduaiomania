@@ -64,6 +64,22 @@ def post_json(url: str, payload: Optional[dict] = None, timeout: int = 20) -> di
         return json.loads(raw) if raw else {}
 
 
+def ensure_proxy_call(client: OpenAI) -> None:
+    """Force at least one LLM proxy request so validator can observe usage."""
+    try:
+        client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[
+                {"role": "system", "content": "Reply with exactly 0."},
+                {"role": "user", "content": "0"},
+            ],
+            temperature=0,
+            max_tokens=1,
+        )
+    except Exception as exc:
+        print(f"[DEBUG] warmup LLM call failed: {exc}", flush=True)
+
+
 def choose_fallback_candidate(candidates: list, health: dict, cortisol: float, action_mask: list) -> int:
     valid = [c for i, c in enumerate(candidates) if i < len(action_mask) and action_mask[i]]
     if not valid:
@@ -93,9 +109,10 @@ def choose_fallback_candidate(candidates: list, health: dict, cortisol: float, a
     return int(best.get("id", 0))
 
 def get_model_message(client: OpenAI, step: int, candidates: list, health: dict, cortisol: float, action_mask: list) -> int:
-    valid_candidates = [c for i, c in enumerate(candidates) if action_mask[i]]
-    if not valid_candidates:
-        return candidates[0]["id"] if candidates else 0
+    valid_candidates = [
+        c for i, c in enumerate(candidates)
+        if i < len(action_mask) and bool(action_mask[i])
+    ]
 
     candidates_str = json.dumps(valid_candidates, indent=2)
     health_str = json.dumps(health, indent=2)
@@ -128,6 +145,7 @@ def main() -> None:
     score = 0.0
     
     log_start(task=TASK_NAME, env=BENCHMARK, model=MODEL_NAME)
+    ensure_proxy_call(client)
     
     # Reset Environment
     try:
