@@ -1,7 +1,7 @@
 spec_version: 1
 name: "project-eudaimonia"
 type: "space"
-runtime: "fastapi"
+runtime: "docker"
 app: "server.app:app"
 port: 7860
 description: >
@@ -12,16 +12,13 @@ description: >
 tasks:
   - id: "easy"
     name: "easy-survival"
-    description: "Keep the user alive and cortisol below the burnout threshold for 20 steps."
     difficulty: "easy"
-    grader: "server.grader:Grader"
+    description: "Keep the user alive and cortisol below the burnout threshold for 20 steps."
   - id: "medium"
     name: "medium-eudaimonia"
-    description: "Maximize wisdom while maintaining high energy. Requires a balanced content diet."
     difficulty: "medium"
-    grader: "server.grader:Grader"
+    description: "Maximize wisdom while maintaining high energy. Requires a balanced content diet."
   - id: "hard"
     name: "hard-detox"
-    description: "The user starts in a state of high brain-rot and rage-bait. Guide them back to high autonomy and relatedness."
     difficulty: "hard"
-    grader: "server.grader:Grader"
+    description: "The user starts in a state of high brain-rot and rage-bait. Guide them back to high autonomy and relatedness."

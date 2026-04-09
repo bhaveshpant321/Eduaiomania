@@ -1,0 +1,29 @@
+{
+  "target": ".",
+  "environment": "",
+  "validation_type": "local_environment",
+  "standard_version": "local",
+  "standard_profile": "openenv-local",
+  "passed": true,
+  "summary": {
+    "passed_count": 1,
+    "total_count": 1,
+    "failed_criteria": [],
+    "required_passed_count": 1,
+    "required_total_count": 1
+  },
+  "criteria": [
+    {
+      "id": "multi_mode_deployment_readiness",
+      "description": "Environment structure is ready for multi-mode deployment",
+      "passed": true,
+      "required": true,
+      "details": "No issues found",
+      "actual": {
+        "issues": []
+      }
+    }
+  ],
+  "issues": [],
+  "deployment_modes": {}
+}

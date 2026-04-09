@@ -1,0 +1,4 @@
+﻿hf	https://huggingface.co/spaces/binfinity/Eduaiomania (fetch)
+hf	https://huggingface.co/spaces/binfinity/Eduaiomania (push)
+origin	https://github.com/bhaveshpant321/Eduaiomania.git (fetch)
+origin	https://github.com/bhaveshpant321/Eduaiomania.git (push)

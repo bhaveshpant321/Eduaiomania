@@ -1,0 +1,96 @@
+{
+  "id": "openapi_version_available",
+  "description": "GET /openapi.json returns OpenAPI info.version",
+  "passed": true,
+  "required": true,
+  "expected": {
+    "status_code": 200,
+    "info.version": "string"
+  },
+  "actual": {
+    "status_code": 200,
+    "info.version": "0.1.0"
+  }
+}
+{
+  "id": "health_endpoint",
+  "description": "GET /health returns healthy status",
+  "passed": false,
+  "required": true,
+  "expected": {
+    "status_code": 200,
+    "status": "healthy"
+  },
+  "actual": {
+    "status_code": 404,
+    "status": null
+  }
+}
+{
+  "id": "metadata_endpoint",
+  "description": "GET /metadata returns name and description",
+  "passed": false,
+  "required": true,
+  "expected": {
+    "status_code": 200,
+    "fields": [
+      "name",
+      "description"
+    ]
+  },
+  "actual": {
+    "status_code": 404,
+    "name": null,
+    "description": null
+  }
+}
+{
+  "id": "schema_endpoint",
+  "description": "GET /schema returns action, observation, and state schemas",
+  "passed": false,
+  "required": true,
+  "expected": {
+    "status_code": 200,
+    "fields": [
+      "action",
+      "observation",
+      "state"
+    ]
+  },
+  "actual": {
+    "status_code": 404,
+    "has_action": false,
+    "has_observation": false,
+    "has_state": false
+  }
+}
+{
+  "id": "mcp_endpoint",
+  "description": "POST /mcp is reachable and returns JSON-RPC payload",
+  "passed": false,
+  "required": true,
+  "expected": {
+    "status_code": 200,
+    "jsonrpc": "2.0"
+  },
+  "actual": {
+    "status_code": 404,
+    "jsonrpc": null
+  }
+}
+{
+  "id": "mode_endpoint_consistency",
+  "description": "OpenAPI endpoint set matches OpenEnv mode contract",
+  "passed": true,
+  "required": true,
+  "expected": {
+    "/reset": true,
+    "/step": true,
+    "/state": true
+  },
+  "actual": {
+    "/reset": true,
+    "/step": true,
+    "/state": true
+  }
+}

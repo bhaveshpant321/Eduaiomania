@@ -38,13 +38,14 @@ def root():
 
 @app.get("/health")
 def health():
-    """OpenEnv required: health check endpoint."""
-    return {"status": "healthy", "environment": "project-eudaimonia", "version": "1.0.0"}
+    """Health check endpoint matching BlastRadius pattern."""
+    return {"status": "ok", "environment": "project-eudaimonia", "version": "1.0.0"}
 
 
+@app.get("/info")
 @app.get("/metadata")
-def metadata():
-    """OpenEnv required: environment metadata endpoint."""
+def info():
+    """Environment metadata matching BlastRadius pattern."""
     return {
         "name": "project-eudaimonia",
         "description": (
@@ -53,11 +54,18 @@ def metadata():
             "Agents must balance engagement, energy, and cortisol to avoid burnout and boredom."
         ),
         "version": "1.0.0",
-        "tasks": [
-            {"id": "easy",   "name": "easy-survival",    "difficulty": "easy",   "grader": "server.grader:Grader"},
-            {"id": "medium", "name": "medium-eudaimonia", "difficulty": "medium", "grader": "server.grader:Grader"},
-            {"id": "hard",   "name": "hard-detox",        "difficulty": "hard",   "grader": "server.grader:Grader"},
-        ],
+        "tasks": ["easy", "medium", "hard"],
+        "action_space": {
+            "type": "dict",
+            "commands": ["selected_item_id"],
+        },
+        "observation_space": {
+            "type": "dict",
+            "fields": [
+                "candidates", "health_metrics", "cortisol", 
+                "time_of_day", "health_summary", "action_mask"
+            ],
+        },
     }
 
 
@@ -120,29 +128,29 @@ async def mcp(request: Request):
 
 @app.get("/tasks")
 def tasks():
-    """List all available tasks with grader info."""
+    """List all available tasks with descriptions, matching BlastRadius pattern."""
     return {
         "tasks": [
             {
                 "id": "easy",
-                "name": "easy-survival",
+                "title": "Easy Survival",
                 "difficulty": "easy",
                 "description": "Keep the user alive and cortisol below the burnout threshold for 20 steps.",
-                "grader": "server.grader:Grader"
+                "expected_score": "0.7-0.9",
             },
             {
                 "id": "medium",
-                "name": "medium-eudaimonia",
+                "title": "Medium Eudaimonia",
                 "difficulty": "medium",
                 "description": "Maximize wisdom while maintaining high energy. Requires a balanced content diet.",
-                "grader": "server.grader:Grader"
+                "expected_score": "0.4-0.6",
             },
             {
                 "id": "hard",
-                "name": "hard-detox",
+                "title": "Hard Detox",
                 "difficulty": "hard",
                 "description": "The user starts in a state of high brain-rot and rage-bait. Guide them back to high autonomy and relatedness.",
-                "grader": "server.grader:Grader"
+                "expected_score": "0.1-0.3",
             },
         ]
     }
