@@ -136,11 +136,33 @@ class Grader:
         )
 
 
-def get_reward(task_name: str, state: HumanState, cortisol: float, done: bool) -> float:
-    """Module-level wrapper for validators that resolve reward functions from module namespace."""
-    return Grader.get_reward(task_name, state, cortisol, done)
+def _extract_state_from_obs(observation: dict) -> tuple:
+    # Helper to reconstruct minimal state for the Grader class from the observation dict
+    metrics = observation.get("health_metrics", {})
+    from engine.human_model import HumanState
+    st = HumanState()
+    st.dopamine = metrics.get("dopamine", 0.5)
+    st.autonomy = metrics.get("autonomy", 0.5)
+    st.competence = metrics.get("competence", 0.5)
+    st.relatedness = metrics.get("relatedness", 0.5)
+    st.energy = metrics.get("energy", 0.8)
+    st.bubble = metrics.get("bubble", 0.2)
+    st.time_of_day = observation.get("time_of_day", 18.0)
+    return st, observation.get("cortisol", 0.0)
 
+def grade_easy(observation: dict, reward: float, done: bool, info: dict) -> float:
+    st, cortisol = _extract_state_from_obs(observation)
+    return Grader.get_reward("easy", st, cortisol, done)
 
-def get_termination_status(task_name: str, state: HumanState, cortisol: float, step_count: int) -> tuple[bool, bool]:
-    """Module-level wrapper for validators that resolve termination functions from module namespace."""
-    return Grader.get_termination_status(task_name, state, cortisol, step_count)
+def grade_medium(observation: dict, reward: float, done: bool, info: dict) -> float:
+    st, cortisol = _extract_state_from_obs(observation)
+    return Grader.get_reward("medium", st, cortisol, done)
+
+def grade_hard(observation: dict, reward: float, done: bool, info: dict) -> float:
+    st, cortisol = _extract_state_from_obs(observation)
+    return Grader.get_reward("hard", st, cortisol, done)
+
+def grade_mastery(observation: dict, reward: float, done: bool, info: dict) -> float:
+    st, cortisol = _extract_state_from_obs(observation)
+    # Mastery is a variation of hard with slightly different weights if needed
+    return Grader.get_reward("hard", st, cortisol, done)

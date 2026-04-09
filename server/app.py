@@ -55,9 +55,10 @@ def info():
         ),
         "version": "1.0.0",
         "tasks": [
-            {"id": "easy",   "title": "Easy Survival",    "difficulty": "easy",   "grader": "eudaimonia_grader"},
-            {"id": "medium", "title": "Medium Eudaimonia", "difficulty": "medium", "grader": "eudaimonia_grader"},
-            {"id": "hard",   "title": "Hard Detox",        "difficulty": "hard",   "grader": "eudaimonia_grader"},
+            {"id": "easy",    "title": "Easy Survival",    "difficulty": "easy",   "grader": "server.grader:grade_easy"},
+            {"id": "medium",  "title": "Medium Eudaimonia", "difficulty": "medium", "grader": "server.grader:grade_medium"},
+            {"id": "hard",    "title": "Hard Detox",        "difficulty": "hard",   "grader": "server.grader:grade_hard"},
+            {"id": "mastery", "title": "Hard Mastery",      "difficulty": "hard",   "grader": "server.grader:grade_mastery"},
         ],
         "action_space": {
             "type": "dict",
@@ -141,7 +142,7 @@ def tasks():
                 "difficulty": "easy",
                 "description": "Keep the user alive and cortisol below the burnout threshold for 20 steps.",
                 "expected_score": "0.7-0.9",
-                "grader": "eudaimonia_grader",
+                "grader": "server.grader:grade_easy",
             },
             {
                 "id": "medium",
@@ -149,7 +150,7 @@ def tasks():
                 "difficulty": "medium",
                 "description": "Maximize wisdom while maintaining high energy. Requires a balanced content diet.",
                 "expected_score": "0.4-0.6",
-                "grader": "eudaimonia_grader",
+                "grader": "server.grader:grade_medium",
             },
             {
                 "id": "hard",
@@ -157,7 +158,15 @@ def tasks():
                 "difficulty": "hard",
                 "description": "The user starts in a state of high brain-rot and rage-bait. Guide them back to high autonomy and relatedness.",
                 "expected_score": "0.1-0.3",
-                "grader": "eudaimonia_grader",
+                "grader": "server.grader:grade_hard",
+            },
+            {
+                "id": "mastery",
+                "title": "Hard Mastery",
+                "difficulty": "hard",
+                "description": "Extreme mode. Survive the most aggressive algorithmic manipulation.",
+                "expected_score": "0.05-0.2",
+                "grader": "server.grader:grade_mastery",
             },
         ]
     }
