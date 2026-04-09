@@ -25,7 +25,7 @@ def run_benchmark():
     # 1. Start the FastAPI Environment Server in the background
     print("[1] Spinning up Project Eudaimonia server on port 7860...")
     server_process = subprocess.Popen(
-        ["uvicorn", "server.app:app", "--host", "127.0.0.1", "--port", "7860", "--log-level", "warning"],
+        ["uvicorn", "eudaimonia.server.app:app", "--host", "127.0.0.1", "--port", "7860", "--log-level", "warning"],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL
     )
@@ -49,7 +49,7 @@ def run_benchmark():
                 env_vars["TASK_NAME"] = task
                 
                 result = subprocess.run(
-                    ["python", "inference.py"], 
+                    ["python", "../inference.py"], 
                     env=env_vars, 
                     capture_output=True, 
                     text=True

@@ -1,5 +1,5 @@
 import dataclasses
-from engine.stochastic import apply_gaussian_noise, clamp
+from eudaimonia.engine.stochastic import apply_gaussian_noise, clamp
 
 @dataclasses.dataclass
 class ContentAction:

@@ -3,7 +3,7 @@ import json
 import math
 from enum import Enum
 from pathlib import Path
-from engine.human_model import ContentAction
+from eudaimonia.engine.human_model import ContentAction
 
 class ContentType(Enum):
     RAGE_BAIT = "RAGE_BAIT"
@@ -99,7 +99,7 @@ def generate_content_item(item_id: int):
         "age_appropriateness": round(age, 3)
     }
 
-def build_content_database(size=5000, output_file="engine/content_db.json"):
+def build_content_database(size=5000, output_file="eudaimonia/engine/content_db.json"):
     items = []
     for i in range(size):
         items.append(generate_content_item(i))
@@ -109,7 +109,7 @@ def build_content_database(size=5000, output_file="engine/content_db.json"):
 
 class ContentFactory:
     """Loads the pre-generated database to serve content candidates."""
-    def __init__(self, db_path="engine/content_db.json"):
+    def __init__(self, db_path="eudaimonia/engine/content_db.json"):
         if not Path(db_path).exists():
             print(f"Content DB not found at {db_path}. Generating now...")
             self.db = build_content_database(5000, db_path)

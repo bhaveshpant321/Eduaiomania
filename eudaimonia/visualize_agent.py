@@ -47,7 +47,7 @@ def run_agent_loop():
             step += 1
             
     except requests.exceptions.ConnectionError:
-        print("API Server not running. Please start the FastAPI app first: uvicorn server.app:app --host 0.0.0.0 --port 7860")
+        print("API Server not running. Please start the FastAPI app first: uvicorn eudaimonia.server.app:app --host 0.0.0.0 --port 7860")
 
 def update_plot(i):
     plt.cla()

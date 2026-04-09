@@ -5,15 +5,15 @@ import sys
 # Ensure the root project directory is in the sys.path
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
-from engine.human_model import HumanModel, SPONGE, EXPLORER, SAGE, ContentAction
-from engine.content_factory import ContentFactory
-from server.grader import Grader
+from eudaimonia.engine.human_model import HumanModel, SPONGE, EXPLORER, SAGE, ContentAction
+from eudaimonia.engine.content_factory import ContentFactory
+from eudaimonia.server.grader import Grader
 
 TASKS = ["easy-survival", "medium-eudaimonia", "hard-detox"]
 EPISODES = 1000
 MAX_STEPS = 20
 
-content_fac = ContentFactory(db_path="engine/content_db.json")
+content_fac = ContentFactory(db_path="eudaimonia/engine/content_db.json")
 
 def agent_random(candidates, state, cortisol):
     return random.choice(candidates)

@@ -5,12 +5,15 @@ import os
 import uvicorn
 from typing import Dict, Any, List
 
-from engine.human_model import HumanModel, SPONGE, EXPLORER, SAGE, ContentAction
-from engine.content_factory import ContentFactory
-from engine.stochastic import apply_gaussian_noise
-from server.models import EudaimoniaObservation, EudaimoniaAction, EudaimoniaState, ContentCandidate, ResetParams, ResetResponse
+from eudaimonia.engine.human_model import HumanModel, SPONGE, EXPLORER, SAGE, ContentAction
+from eudaimonia.engine.content_factory import ContentFactory
+from eudaimonia.engine.stochastic import apply_gaussian_noise
+from eudaimonia.server.models import (
+    EudaimoniaObservation, EudaimoniaAction, EudaimoniaState, 
+    ContentCandidate, ResetParams, ResetResponse
+)
 import copy
-from server.grader import Grader
+from eudaimonia.server.grader import Grader
 
 app = FastAPI(title="Project Eudaimonia", description="OpenEnv server for Human Digital Twin")
 
@@ -54,12 +57,7 @@ def info():
             "Agents must balance engagement, energy, and cortisol to avoid burnout and boredom."
         ),
         "version": "1.0.0",
-        "tasks": [
-            {"id": "easy",    "title": "Easy Survival",    "difficulty": "easy",   "grader": "server.grader:grade_easy"},
-            {"id": "medium",  "title": "Medium Eudaimonia", "difficulty": "medium", "grader": "server.grader:grade_medium"},
-            {"id": "hard",    "title": "Hard Detox",        "difficulty": "hard",   "grader": "server.grader:grade_hard"},
-            {"id": "mastery", "title": "Hard Mastery",      "difficulty": "hard",   "grader": "server.grader:grade_mastery"},
-        ],
+        "tasks": ["easy", "medium", "hard", "mastery"],
         "action_space": {
             "type": "dict",
             "commands": ["selected_item_id"],
@@ -395,7 +393,7 @@ def build_observation(is_done: bool = False) -> EudaimoniaObservation:
     )
 
 def main() -> None:
-    uvicorn.run("server.app:app", host="0.0.0.0", port=7860, reload=True)
+    uvicorn.run("eudaimonia.server.app:app", host="0.0.0.0", port=7860, reload=True)
 
 
 if __name__ == "__main__":

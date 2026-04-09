@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Dict
 
-from engine.human_model import HumanState, Persona
+from eudaimonia.engine.human_model import HumanState, Persona
 
 
 @dataclass
