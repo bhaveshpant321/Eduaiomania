@@ -3,14 +3,14 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-# Install dependencies via the project file
-COPY pyproject.toml .
-COPY README.md .
-# Create the package directory and copy content
-COPY eudaimonia/ /app/eudaimonia/
+# Copy requirements or just install directly
+RUN pip install --no-cache-dir fastapi uvicorn pydantic openai openenv-core
 
-# Install the package and its dependencies
-RUN pip install --no-cache-dir .
+# Add the project files (back to root to satisfy validator)
+COPY engine/ /app/engine/
+COPY server/ /app/server/
+COPY README.md /app/
+COPY openenv.yaml /app/
 
 # Set Python path
 ENV PYTHONPATH=/app
@@ -18,5 +18,5 @@ ENV PYTHONPATH=/app
 # Default HF spaces port
 EXPOSE 7860
 
-# Run the backend using the package path
-CMD ["uvicorn", "eudaimonia.server.app:app", "--host", "0.0.0.0", "--port", "7860"]
+# Run the backend using the standard path
+CMD ["uvicorn", "server.app:app", "--host", "0.0.0.0", "--port", "7860"]
