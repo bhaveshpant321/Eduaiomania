@@ -5,6 +5,8 @@ colorFrom: green
 colorTo: blue
 sdk: docker
 pinned: false
+openenv: true
+tags: [openenv]
 ---
 
 # 🌿 Project Eudaimonia: An OpenEnv RL Benchmark

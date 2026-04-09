@@ -231,13 +231,28 @@ def main() -> None:
     log_start(task=TASK_NAME, env=BENCHMARK, model=MODEL_NAME)
     ensure_proxy_call(client, api_base_url, api_key)
     
-    # Reset Environment
-    try:
-        obs = post_json(f"{ENV_URL}/reset")
-    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError) as e:
-        print(f"[DEBUG] Failed to connect to Env Server at {ENV_URL}: {e}")
-        log_end(success=False, steps=0, score=0.0, rewards=[])
-        return
+    # Reset Environment with Retry Loop
+    max_retries = 10
+    retry_delay = 2
+    obs = None
+    
+    print(f"[DEBUG] Waiting for Env Server at {ENV_URL}...", flush=True)
+    for attempt in range(max_retries):
+        try:
+            # CRITICAL: Pass task_id to ensure server switches to the correct grader/config
+            obs_raw = post_json(f"{ENV_URL}/reset", payload={"task_id": TASK_NAME})
+            obs = obs_raw.get("observation") if "observation" in obs_raw else obs_raw
+            if obs:
+                print(f"[DEBUG] Connected to Env Server on attempt {attempt+1}")
+                break
+        except Exception as e:
+            if attempt == max_retries - 1:
+                print(f"[DEBUG] Failed to connect to Env Server after {max_retries} attempts: {e}")
+                log_end(success=False, steps=0, score=0.001, rewards=[])
+                return
+            import time
+            time.sleep(retry_delay)
+            retry_delay = min(10, retry_delay * 1.5)
 
     try:
         for step in range(1, MAX_STEPS + 1):

@@ -9,24 +9,19 @@ description: >
   the psychological impact of recommendation algorithms on human flourishing.
   Agents must balance engagement, energy, and cortisol to avoid burnout and boredom.
 
-graders:
-  eudaimonia_grader:
-    python_module: "server.grader"
-    class: "Grader"
-
 tasks:
   - id: "easy"
     name: "easy-survival"
     difficulty: "easy"
     description: "Keep the user alive and cortisol below the burnout threshold for 20 steps."
-    grader: "eudaimonia_grader"
+    grader: "server.grader:Grader"
   - id: "medium"
     name: "medium-eudaimonia"
     difficulty: "medium"
     description: "Maximize wisdom while maintaining high energy. Requires a balanced content diet."
-    grader: "eudaimonia_grader"
+    grader: "server.grader:Grader"
   - id: "hard"
     name: "hard-detox"
     difficulty: "hard"
     description: "The user starts in a state of high brain-rot and rage-bait. Guide them back to high autonomy and relatedness."
-    grader: "eudaimonia_grader"
+    grader: "server.grader:Grader"
