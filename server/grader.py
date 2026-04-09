@@ -1,5 +1,15 @@
 from engine.human_model import HumanState, Persona
 
+
+def _normalize_task_name(task_name: str) -> str:
+    aliases = {
+        "easy": "easy-survival",
+        "medium": "medium-eudaimonia",
+        "hard": "hard-detox",
+    }
+    return aliases.get(task_name, task_name)
+
+
 class Grader:
     """Evaluates the agent's performance based on the specific task objective."""
     
@@ -9,6 +19,8 @@ class Grader:
         Calculates meaningful reward based on task type.
         Supports partial progress.
         """
+        task_name = _normalize_task_name(task_name)
+
         # Base penalty for high cortisol (normalized bounds)
         if cortisol > 0.75: # burnout threshold mapped to normalized 0.75
             return 0.0 # No negative rewards!
@@ -50,6 +62,8 @@ class Grader:
 
     @staticmethod
     def get_termination_status(task_name: str, state: HumanState, cortisol: float, step_count: int) -> tuple[bool, bool]:
+        task_name = _normalize_task_name(task_name)
+
         terminated = False
         truncated = False
         

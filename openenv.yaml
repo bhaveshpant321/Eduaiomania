@@ -1,86 +1,62 @@
-version: "1.0"
 spec_version: 1
 name: "project-eudaimonia"
 type: "space"
 runtime: "fastapi"
 app: "server.app:app"
 port: 7860
-metadata:
-  name: "project-eudaimonia"
-  description: "A digital twin simulating the psychological impact of recommendation algorithms on human flourishing."
-  tags: ["rl", "openenv", "simulation", "psychology"]
-  maintainers: ["Bhavesh"]
-
-environment:
-  docker_image: "project-eudaimonia:latest"
-  entrypoint: "server.app:app"
+description: >
+  Project Eudaimonia is an OpenEnv-compliant RL environment that simulates
+  the psychological impact of recommendation algorithms on human flourishing.
+  Agents must balance engagement, energy, and cortisol to avoid burnout and boredom.
 
 graders:
-  easy-survival-grader:
+  easy-grader:
+    id: "easy-grader"
     enabled: true
     type: "python"
     module: "server.grader"
     class: "Grader"
     reward_fn: "Grader.get_reward"
     termination_fn: "Grader.get_termination_status"
-    task_name: "easy-survival"
-  medium-eudaimonia-grader:
+    task_name: "easy"
+  medium-grader:
+    id: "medium-grader"
     enabled: true
     type: "python"
     module: "server.grader"
     class: "Grader"
     reward_fn: "Grader.get_reward"
     termination_fn: "Grader.get_termination_status"
-    task_name: "medium-eudaimonia"
-  hard-detox-grader:
+    task_name: "medium"
+  hard-grader:
+    id: "hard-grader"
     enabled: true
     type: "python"
     module: "server.grader"
     class: "Grader"
     reward_fn: "Grader.get_reward"
     termination_fn: "Grader.get_termination_status"
-    task_name: "hard-detox"
+    task_name: "hard"
 
 tasks:
-  - id: "easy-survival"
+  - id: "easy"
+    name: "easy-survival"
     description: "Keep the user alive and cortisol below the burnout threshold for 20 steps."
     difficulty: "easy"
     enabled: true
-    grader_id: "easy-survival-grader"
-    grader:
-      enabled: true
-      id: "easy-survival-grader"
-      type: "python"
-      module: "server.grader"
-      class: "Grader"
-      reward_fn: "Grader.get_reward"
-      termination_fn: "Grader.get_termination_status"
-      task_name: "easy-survival"
-  - id: "medium-eudaimonia"
+    grader_id: "easy-grader"
+    grader: "easy-grader"
+  - id: "medium"
+    name: "medium-eudaimonia"
     description: "Maximize wisdom while maintaining high energy. Requires a balanced content diet."
     difficulty: "medium"
     enabled: true
-    grader_id: "medium-eudaimonia-grader"
-    grader:
-      enabled: true
-      id: "medium-eudaimonia-grader"
-      type: "python"
-      module: "server.grader"
-      class: "Grader"
-      reward_fn: "Grader.get_reward"
-      termination_fn: "Grader.get_termination_status"
-      task_name: "medium-eudaimonia"
-  - id: "hard-detox"
+    grader_id: "medium-grader"
+    grader: "medium-grader"
+  - id: "hard"
+    name: "hard-detox"
     description: "The user starts in a state of high brain-rot and rage-bait. Guide them back to high autonomy and relatedness."
     difficulty: "hard"
     enabled: true
-    grader_id: "hard-detox-grader"
-    grader:
-      enabled: true
-      id: "hard-detox-grader"
-      type: "python"
-      module: "server.grader"
-      class: "Grader"
-      reward_fn: "Grader.get_reward"
-      termination_fn: "Grader.get_termination_status"
-      task_name: "hard-detox"
+    grader_id: "hard-grader"
+    grader: "hard-grader"
