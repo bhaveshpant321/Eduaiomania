@@ -45,18 +45,39 @@ tasks:
     difficulty: "easy"
     enabled: true
     grader_id: "easy-grader"
-    grader: "easy-grader"
+    grader:
+      id: "easy-grader"
+      enabled: true
+      type: "python"
+      module: "server.grader"
+      reward_fn: "get_reward"
+      termination_fn: "get_termination_status"
+      task_name: "easy"
   - id: "medium"
     name: "medium-eudaimonia"
     description: "Maximize wisdom while maintaining high energy. Requires a balanced content diet."
     difficulty: "medium"
     enabled: true
     grader_id: "medium-grader"
-    grader: "medium-grader"
+    grader:
+      id: "medium-grader"
+      enabled: true
+      type: "python"
+      module: "server.grader"
+      reward_fn: "get_reward"
+      termination_fn: "get_termination_status"
+      task_name: "medium"
   - id: "hard"
     name: "hard-detox"
     description: "The user starts in a state of high brain-rot and rage-bait. Guide them back to high autonomy and relatedness."
     difficulty: "hard"
     enabled: true
     grader_id: "hard-grader"
-    grader: "hard-grader"
+    grader:
+      id: "hard-grader"
+      enabled: true
+      type: "python"
+      module: "server.grader"
+      reward_fn: "get_reward"
+      termination_fn: "get_termination_status"
+      task_name: "hard"
