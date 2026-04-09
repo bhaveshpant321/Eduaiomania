@@ -8,7 +8,7 @@ from typing import Dict, Any, List
 from engine.human_model import HumanModel, SPONGE, EXPLORER, SAGE, ContentAction
 from engine.content_factory import ContentFactory
 from engine.stochastic import apply_gaussian_noise
-from server.models import EudaimoniaObservation, EudaimoniaAction, EudaimoniaState, ContentCandidate, ResetParams
+from server.models import EudaimoniaObservation, EudaimoniaAction, EudaimoniaState, ContentCandidate, ResetParams, ResetResponse
 import copy
 from server.grader import Grader
 
@@ -162,10 +162,26 @@ def tasks():
         ]
     }
 
-@app.post("/reset", response_model=EudaimoniaObservation)
-def reset(params: ResetParams = None) -> EudaimoniaObservation:
-    global current_model, current_candidates, step_count, current_cortisol, last_chosen_content
+@app.post("/reset", response_model=ResetResponse)
+def reset(params: ResetParams = None) -> ResetResponse:
+    global current_model, current_candidates, step_count, current_cortisol, last_chosen_content, TASK_NAME
     
+    # Task Switching Logic: Update TASK_NAME based on request
+    if params and params.task_id:
+        task_mapping = {
+            "easy": "easy-survival",
+            "medium": "medium-eudaimonia",
+            "hard": "hard-detox",
+            "easy-survival": "easy-survival",
+            "medium-eudaimonia": "medium-eudaimonia",
+            "hard-detox": "hard-detox"
+        }
+        requested_task = params.task_id
+        if requested_task in task_mapping:
+            TASK_NAME = task_mapping[requested_task]
+        else:
+            TASK_NAME = requested_task
+            
     if params and params.seed is not None:
         random.seed(params.seed)
 
@@ -200,7 +216,14 @@ def reset(params: ResetParams = None) -> EudaimoniaObservation:
     # Generate initial candidates
     current_candidates = content_factory.get_candidates(5)
     
-    return build_observation()
+    obs = build_observation()
+    
+    return ResetResponse(
+        observation=obs,
+        reward=0.0,
+        done=False,
+        info={"task_context": TASK_NAME}
+    )
 
 @app.post("/step", response_model=StepResponse)
 def step(action: EudaimoniaAction) -> StepResponse:

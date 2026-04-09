@@ -2,6 +2,7 @@ from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 
 class ResetParams(BaseModel):
+    task_id: Optional[str] = Field(None, description="The specific task to initialize.")
     seed: Optional[int] = Field(None, description="Optional seed for deterministic generation.")
 
 class ContentCandidate(BaseModel):
@@ -47,3 +48,9 @@ class EudaimoniaState(BaseModel):
     wisdom: float
     persona_type: str
     step_count: int
+
+class ResetResponse(BaseModel):
+    observation: EudaimoniaObservation
+    reward: Optional[float] = 0.0
+    done: bool = False
+    info: Dict[str, Any] = {}
