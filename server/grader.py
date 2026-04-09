@@ -26,6 +26,11 @@ def _normalize_task_name(task_name: str) -> str:
     return aliases.get(task_name, task_name)
 
 
+def _clamp_strict(val: float) -> float:
+    """Ensures score is strictly within (0, 1) as required by Meta validator."""
+    return max(0.0001, min(0.9999, val))
+
+
 class Grader:
     """Evaluates the agent's performance based on the specific task objective."""
 
@@ -79,7 +84,7 @@ class Grader:
         if (hour >= 22 or hour < 6) and (cortisol > 0.4 or state.dopamine > 0.6):
             base_reward *= 0.1 # Huge penalty for doom-scrolling late at night
 
-        return round(base_reward, 4)
+        return _clamp_strict(round(base_reward, 4))
 
     @staticmethod
     def get_termination_status(task_name: str, state: HumanState, cortisol: float, step_count: int) -> tuple[bool, bool]:
@@ -121,7 +126,7 @@ class Grader:
         denom = self._config.max_total_reward if self._config.max_total_reward > 0 else 1.0
         normalized = max(0.0, min(1.0, self._cumulative_reward / denom))
         return GradeResult(
-            reward=round(normalized, 4),
+            reward=_clamp_strict(round(normalized, 4)),
             breakdown={
                 "raw_cumulative": round(self._cumulative_reward, 4),
                 "normalized_score": round(normalized, 4),

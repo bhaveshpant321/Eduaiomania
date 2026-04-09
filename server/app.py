@@ -220,7 +220,7 @@ def reset(params: ResetParams = None) -> ResetResponse:
     
     return ResetResponse(
         observation=obs,
-        reward=0.0,
+        reward=0.0001,
         done=False,
         info={"task_context": TASK_NAME}
     )
