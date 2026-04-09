@@ -16,8 +16,8 @@ graders:
     type: "python"
     module: "server.grader"
     class: "Grader"
-    reward_fn: "Grader.get_reward"
-    termination_fn: "Grader.get_termination_status"
+    reward_fn: "get_reward"
+    termination_fn: "get_termination_status"
     task_name: "easy"
   medium-grader:
     id: "medium-grader"
@@ -25,8 +25,8 @@ graders:
     type: "python"
     module: "server.grader"
     class: "Grader"
-    reward_fn: "Grader.get_reward"
-    termination_fn: "Grader.get_termination_status"
+    reward_fn: "get_reward"
+    termination_fn: "get_termination_status"
     task_name: "medium"
   hard-grader:
     id: "hard-grader"
@@ -34,8 +34,8 @@ graders:
     type: "python"
     module: "server.grader"
     class: "Grader"
-    reward_fn: "Grader.get_reward"
-    termination_fn: "Grader.get_termination_status"
+    reward_fn: "get_reward"
+    termination_fn: "get_termination_status"
     task_name: "hard"
 
 tasks:

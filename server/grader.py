@@ -1,4 +1,20 @@
+from dataclasses import dataclass, field
+from typing import Dict
+
 from engine.human_model import HumanState, Persona
+
+
+@dataclass
+class GradeResult:
+    reward: float = 0.0
+    breakdown: Dict[str, float] = field(default_factory=dict)
+    feedback: str = ""
+
+
+@dataclass
+class ScenarioGradingConfig:
+    task_name: str = "medium"
+    max_total_reward: float = 1.0
 
 
 def _normalize_task_name(task_name: str) -> str:
@@ -12,6 +28,11 @@ def _normalize_task_name(task_name: str) -> str:
 
 class Grader:
     """Evaluates the agent's performance based on the specific task objective."""
+
+    def __init__(self, config: ScenarioGradingConfig | None = None):
+        self._config = config or ScenarioGradingConfig()
+        self._cumulative_reward = 0.0
+        self._step_rewards = []
     
     @staticmethod
     def get_reward(task_name: str, state: HumanState, cortisol: float, done: bool) -> float:
@@ -78,3 +99,43 @@ class Grader:
             truncated = True
             
         return terminated, truncated
+
+    def grade_step(self, task_name: str, state: HumanState, cortisol: float, done: bool, step_count: int) -> GradeResult:
+        """Compatibility API for validators that expect instance-based grading."""
+        reward = self.get_reward(task_name, state, cortisol, done)
+        terminated, truncated = self.get_termination_status(task_name, state, cortisol, step_count)
+        self._cumulative_reward += reward
+        self._step_rewards.append(reward)
+        return GradeResult(
+            reward=round(reward, 4),
+            breakdown={
+                "reward": round(reward, 4),
+                "terminated": float(terminated),
+                "truncated": float(truncated),
+            },
+            feedback="graded",
+        )
+
+    def get_final_score(self) -> GradeResult:
+        """Compatibility API for validators that expect a final score object."""
+        denom = self._config.max_total_reward if self._config.max_total_reward > 0 else 1.0
+        normalized = max(0.0, min(1.0, self._cumulative_reward / denom))
+        return GradeResult(
+            reward=round(normalized, 4),
+            breakdown={
+                "raw_cumulative": round(self._cumulative_reward, 4),
+                "normalized_score": round(normalized, 4),
+                "steps_taken": float(len(self._step_rewards)),
+            },
+            feedback="final",
+        )
+
+
+def get_reward(task_name: str, state: HumanState, cortisol: float, done: bool) -> float:
+    """Module-level wrapper for validators that resolve reward functions from module namespace."""
+    return Grader.get_reward(task_name, state, cortisol, done)
+
+
+def get_termination_status(task_name: str, state: HumanState, cortisol: float, step_count: int) -> tuple[bool, bool]:
+    """Module-level wrapper for validators that resolve termination functions from module namespace."""
+    return Grader.get_termination_status(task_name, state, cortisol, step_count)
