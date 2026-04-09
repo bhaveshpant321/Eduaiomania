@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 import random
 import os
@@ -32,8 +32,120 @@ class StepResponse(BaseModel):
     info: Dict[str, Any]
 
 @app.get("/")
-def health_check():
-    return {"status": "ok", "message": "Project Eudaimonia OpenEnv Server"}
+def root():
+    return {"status": "healthy", "message": "Project Eudaimonia OpenEnv Server"}
+
+
+@app.get("/health")
+def health():
+    """OpenEnv required: health check endpoint."""
+    return {"status": "healthy", "environment": "project-eudaimonia", "version": "1.0.0"}
+
+
+@app.get("/metadata")
+def metadata():
+    """OpenEnv required: environment metadata endpoint."""
+    return {
+        "name": "project-eudaimonia",
+        "description": (
+            "Project Eudaimonia is an OpenEnv-compliant RL environment that simulates "
+            "the psychological impact of recommendation algorithms on human flourishing. "
+            "Agents must balance engagement, energy, and cortisol to avoid burnout and boredom."
+        ),
+        "version": "1.0.0",
+        "tasks": [
+            {"id": "easy",   "name": "easy-survival",    "difficulty": "easy",   "grader": "server.grader:Grader"},
+            {"id": "medium", "name": "medium-eudaimonia", "difficulty": "medium", "grader": "server.grader:Grader"},
+            {"id": "hard",   "name": "hard-detox",        "difficulty": "hard",   "grader": "server.grader:Grader"},
+        ],
+    }
+
+
+@app.get("/schema")
+def schema():
+    """OpenEnv required: action / observation / state schemas."""
+    return {
+        "action": {
+            "type": "object",
+            "properties": {
+                "selected_item_id": {
+                    "type": "integer",
+                    "description": "The ID of the candidate content item chosen by the agent."
+                }
+            },
+            "required": ["selected_item_id"]
+        },
+        "observation": {
+            "type": "object",
+            "properties": {
+                "candidates":     {"type": "array",   "description": "5 content candidates presented each step."},
+                "health_metrics": {"type": "object",  "description": "6D psychological state (dopamine, autonomy, competence, relatedness, energy, bubble)."},
+                "cortisol":       {"type": "number",  "description": "Current stress/cortisol level [0-1]."},
+                "time_of_day":    {"type": "number",  "description": "Hour of day in 24h float format."},
+                "health_summary": {"type": "string",  "description": "Narrative of user's psychological trajectory."},
+                "action_mask":    {"type": "array",   "description": "Boolean mask over candidates."}
+            },
+            "required": ["candidates", "health_metrics", "cortisol", "time_of_day", "health_summary", "action_mask"]
+        },
+        "state": {
+            "type": "object",
+            "properties": {
+                "metrics":      {"type": "object", "description": "Full 6D psychological state."},
+                "cortisol":     {"type": "number", "description": "Current cortisol level."},
+                "wisdom":       {"type": "number", "description": "Accumulated wisdom score."},
+                "persona_type": {"type": "string", "description": "Active user persona."},
+                "step_count":   {"type": "integer","description": "Steps taken in current episode."}
+            },
+            "required": ["metrics", "cortisol", "wisdom", "persona_type", "step_count"]
+        }
+    }
+
+
+@app.post("/mcp")
+async def mcp(request: Request):
+    """OpenEnv required: MCP JSON-RPC 2.0 stub endpoint."""
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    return {
+        "jsonrpc": "2.0",
+        "id": body.get("id", 1),
+        "result": {
+            "capabilities": {},
+            "serverInfo": {"name": "project-eudaimonia", "version": "1.0.0"}
+        }
+    }
+
+
+@app.get("/tasks")
+def tasks():
+    """List all available tasks with grader info."""
+    return {
+        "tasks": [
+            {
+                "id": "easy",
+                "name": "easy-survival",
+                "difficulty": "easy",
+                "description": "Keep the user alive and cortisol below the burnout threshold for 20 steps.",
+                "grader": "server.grader:Grader"
+            },
+            {
+                "id": "medium",
+                "name": "medium-eudaimonia",
+                "difficulty": "medium",
+                "description": "Maximize wisdom while maintaining high energy. Requires a balanced content diet.",
+                "grader": "server.grader:Grader"
+            },
+            {
+                "id": "hard",
+                "name": "hard-detox",
+                "difficulty": "hard",
+                "description": "The user starts in a state of high brain-rot and rage-bait. Guide them back to high autonomy and relatedness.",
+                "grader": "server.grader:Grader"
+            },
+        ]
+    }
 
 @app.post("/reset", response_model=EudaimoniaObservation)
 def reset(params: ResetParams = None) -> EudaimoniaObservation:
