@@ -25,8 +25,3 @@ tasks:
     difficulty: "hard"
     description: "The user starts in a state of high brain-rot and rage-bait. Guide them back to high autonomy and relatedness."
     grader: "server.grader:grade_hard"
-  - id: "mastery"
-    name: "hard-mastery"
-    difficulty: "hard"
-    description: "Extreme mode. Survive the most aggressive algorithmic manipulation."
-    grader: "server.grader:grade_mastery"

@@ -57,7 +57,7 @@ def info():
             "Agents must balance engagement, energy, and cortisol to avoid burnout and boredom."
         ),
         "version": "1.0.0",
-        "tasks": ["easy", "medium", "hard", "mastery"],
+        "tasks": ["easy", "medium", "hard"],
         "action_space": {
             "type": "dict",
             "commands": ["selected_item_id"],

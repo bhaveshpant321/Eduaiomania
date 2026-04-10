@@ -19,7 +19,7 @@ MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
 ENV_URL = os.getenv("ENV_URL", "http://localhost:7860")
 
 BENCHMARK = "project-eudaimonia"
-TASKS = ["easy", "medium", "hard", "mastery"]
+TASKS = ["easy", "medium", "hard"]
 MAX_STEPS = 20
 SUCCESS_SCORE_THRESHOLD = 0.5
 
@@ -50,7 +50,6 @@ def log_step(step: int, action: str, reward: float, done: bool, error: Optional[
     print(f"[STEP] step={step} action={action} reward={reward:.4f} done={done_val} error={error_val}", flush=True)
 
 def log_end(task: str, success: bool, steps: int, score: float, rewards: List[float]) -> None:
-    # Use comma-separated list for rewards (standard OpenEnv format)
     rewards_str = ",".join(f"{r:.4f}" for r in rewards)
     print(f"[END] task={task} success={str(success).lower()} steps={steps} score={score:.4f} rewards={rewards_str}", flush=True)
 
@@ -125,7 +124,7 @@ def run_task(client: Optional[Any], api_key: str, task_id: str) -> None:
     obs = None
     
     try:
-        # Reset Environment
+        # Reset Environment with retry
         obs_raw = post_json(f"{ENV_URL}/reset", payload={"task_id": task_id})
         obs = obs_raw.get("observation") if "observation" in obs_raw else obs_raw
         
