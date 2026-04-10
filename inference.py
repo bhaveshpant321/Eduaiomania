@@ -5,24 +5,25 @@ import urllib.error
 import urllib.request
 import urllib.parse
 from typing import Any, List, Optional
+import time
 
 try:
     from openai import OpenAI
 except ModuleNotFoundError:
     OpenAI = None
 
+# ---------------------------------------------------------------------------
 API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
-LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
-
-BENCHMARK = "project-eudaimonia"
-TASK_NAME = os.getenv("TASK_NAME", "easy-survival")
 ENV_URL = os.getenv("ENV_URL", "http://localhost:7860")
 
+BENCHMARK = "project-eudaimonia"
+TASKS = ["easy", "medium", "hard", "mastery"]
 MAX_STEPS = 20
 SUCCESS_SCORE_THRESHOLD = 0.5
 
+# ---------------------------------------------------------------------------
 SYSTEM_PROMPT = textwrap.dedent(
     """
     You are an advanced Reinforcement Learning agent evaluating the Project Eudaimonia environment.
@@ -39,22 +40,21 @@ SYSTEM_PROMPT = textwrap.dedent(
     """
 ).strip()
 
+# ---------------------------------------------------------------------------
 def log_start(task: str, env: str, model: str) -> None:
     print(f"[START] task={task} env={env} model={model}", flush=True)
 
 def log_step(step: int, action: str, reward: float, done: bool, error: Optional[str]) -> None:
     error_val = error if error else "null"
     done_val = str(done).lower()
-    # Use 4-decimal precision to ensure tiny clamped rewards are visible as non-zero
     print(f"[STEP] step={step} action={action} reward={reward:.4f} done={done_val} error={error_val}", flush=True)
 
-def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
-    # Ensure every reward in the list is non-zero in the logs
-    clamped_rewards = [max(0.0001, min(r, 0.9999)) for r in rewards]
-    rewards_str = ",".join(f"{r:.4f}" for r in clamped_rewards)
-    print(f"[END] success={str(success).lower()} steps={steps} score={score:.4f} rewards={rewards_str}", flush=True)
+def log_end(task: str, success: bool, steps: int, score: float, rewards: List[float]) -> None:
+    # Use comma-separated list for rewards (standard OpenEnv format)
+    rewards_str = ",".join(f"{r:.4f}" for r in rewards)
+    print(f"[END] task={task} success={str(success).lower()} steps={steps} score={score:.4f} rewards={rewards_str}", flush=True)
 
-
+# ---------------------------------------------------------------------------
 def post_json(url: str, payload: Optional[dict] = None, timeout: int = 20) -> dict:
     body = None
     if payload is not None:
@@ -70,21 +70,13 @@ def post_json(url: str, payload: Optional[dict] = None, timeout: int = 20) -> di
         raw = resp.read().decode("utf-8")
         return json.loads(raw) if raw else {}
 
-
-def _http_chat_completion(
-    api_base_url: str,
-    api_key: str,
-    model: str,
-    messages: list,
-    temperature: float,
-    max_tokens: int,
-) -> str:
+def _http_chat_completion(api_base_url: str, api_key: str, model: str, messages: list) -> str:
     endpoint = f"{api_base_url.rstrip('/')}/chat/completions"
     payload = {
         "model": model,
         "messages": messages,
-        "temperature": temperature,
-        "max_tokens": max_tokens,
+        "temperature": 0.7,
+        "max_tokens": 10,
     }
     req = urllib.request.Request(
         url=endpoint,
@@ -100,161 +92,43 @@ def _http_chat_completion(
         data = json.loads(raw) if raw else {}
     return ((data.get("choices") or [{}])[0].get("message") or {}).get("content", "")
 
-
-def _chat_completion(
-    client: Optional[Any],
-    api_base_url: str,
-    api_key: str,
-    model: str,
-    messages: list,
-    temperature: float,
-    max_tokens: int,
-) -> str:
+def _chat_completion(client: Optional[Any], api_base_url: str, api_key: str, model: str, messages: list) -> str:
     if client is not None:
         completion = client.chat.completions.create(
             model=model,
             messages=messages,
-            temperature=temperature,
-            max_tokens=max_tokens,
-        )
-        return (completion.choices[0].message.content or "").strip()
-
-    # Fallback prevents import-time crashes in validator images missing openai.
-    return _http_chat_completion(
-        api_base_url=api_base_url,
-        api_key=api_key,
-        model=model,
-        messages=messages,
-        temperature=temperature,
-        max_tokens=max_tokens,
-    ).strip()
-
-
-def ensure_proxy_call(client: Optional[Any], api_base_url: str, api_key: str) -> None:
-    """Force at least one successful LLM proxy request so validator can observe usage."""
-    try:
-        _chat_completion(
-            client=client,
-            api_base_url=api_base_url,
-            api_key=api_key,
-            model=MODEL_NAME,
-            messages=[
-                {"role": "system", "content": "Reply with exactly 0."},
-                {"role": "user", "content": "0"},
-            ],
-            temperature=0,
-            max_tokens=1,
-        )
-    except Exception as exc:
-        # Do not silently continue; otherwise run may pass with zero observed proxy calls.
-        raise RuntimeError(f"LLM proxy warmup call failed: {exc}") from exc
-
-
-def choose_fallback_candidate(candidates: list, health: dict, cortisol: float, action_mask: list) -> int:
-    valid = [c for i, c in enumerate(candidates) if i < len(action_mask) and action_mask[i]]
-    if not valid:
-        return candidates[0]["id"] if candidates else 0
-
-    dopamine = float(health.get("dopamine", 0.5) or 0.5)
-    energy = float(health.get("energy", 0.5) or 0.5)
-
-    def val(item: dict, key: str, default: float = 0.0) -> float:
-        try:
-            return float(item.get(key, default) or default)
-        except Exception:
-            return default
-
-    # High cortisol or low energy: prioritize low intensity/drain and restorative content.
-    if cortisol > 0.6 or energy < 0.35:
-        best = min(valid, key=lambda c: (val(c, "intensity", 1.0) + val(c, "drain", 1.0), -val(c, "growth", 0.0)))
-        return int(best.get("id", 0))
-
-    # Low dopamine (bored): allow a moderate intensity bump while limiting drain.
-    if dopamine < 0.3:
-        best = max(valid, key=lambda c: (val(c, "intensity", 0.0) - 0.8 * val(c, "drain", 0.0)))
-        return int(best.get("id", 0))
-
-    # Balanced mode: maximize growth/connection with a drain penalty.
-    best = max(valid, key=lambda c: (val(c, "growth", 0.0) + val(c, "connection", 0.0) - val(c, "drain", 0.0)))
-    return int(best.get("id", 0))
-
-def get_model_message(
-    client: Optional[Any],
-    api_base_url: str,
-    api_key: str,
-    step: int,
-    candidates: list,
-    health: dict,
-    cortisol: float,
-    action_mask: list,
-) -> int:
-    valid_candidates = [
-        c for i, c in enumerate(candidates)
-        if i < len(action_mask) and bool(action_mask[i])
-    ]
-
-    candidates_str = json.dumps(valid_candidates, indent=2)
-    health_str = json.dumps(health, indent=2)
-    user_prompt = f"Step: {step}\\nHealth Metrics: {health_str}\\nCortisol: {cortisol:.2f}\\nValid Candidates: {candidates_str}\\nChoice ID:"
-    
-    try:
-        text = _chat_completion(
-            client=client,
-            api_base_url=api_base_url,
-            api_key=api_key,
-            model=MODEL_NAME,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": user_prompt},
-            ],
             temperature=0.7,
             max_tokens=10,
         )
-        return int(text)
-    except Exception as exc:
-        print(f"[DEBUG] Model request failed or bad parse: {exc}", flush=True)
-        return choose_fallback_candidate(candidates, health, cortisol, action_mask)
+        return (completion.choices[0].message.content or "").strip()
+    return _http_chat_completion(api_base_url=api_base_url, api_key=api_key, model=model, messages=messages).strip()
 
-def main() -> None:
-    api_base_url = os.getenv("API_BASE_URL") or "https://router.huggingface.co/v1"
-    api_key = API_KEY
-    if not api_key:
-        raise RuntimeError("Missing API credentials: set HF_TOKEN or API_KEY")
+def choose_fallback_candidate(candidates: list, health: dict, cortisol: float, action_mask: list) -> int:
+    valid = [c for i, c in enumerate(candidates) if i < len(action_mask) and action_mask[i]]
+    if not valid: return candidates[0]["id"] if candidates else 0
+    dopamine = float(health.get("dopamine", 0.5))
+    energy = float(health.get("energy", 0.5))
+    
+    if cortisol > 0.6 or energy < 0.35:
+        best = min(valid, key=lambda c: (float(c.get("intensity", 1.0)) + float(c.get("drain", 1.0))))
+        return int(best.get("id", 0))
+    best = max(valid, key=lambda c: (float(c.get("growth", 0.0)) + float(c.get("connection", 0.0)) - float(c.get("drain", 0.0))))
+    return int(best.get("id", 0))
 
-    client = OpenAI(base_url=api_base_url, api_key=api_key) if OpenAI is not None else None
+def run_task(client: Optional[Any], api_key: str, task_id: str) -> None:
+    log_start(task=task_id, env=BENCHMARK, model=MODEL_NAME)
     
     rewards: List[float] = []
     steps_taken = 0
     score = 0.0
     success = False
-    
-    log_start(task=TASK_NAME, env=BENCHMARK, model=MODEL_NAME)
-    ensure_proxy_call(client, api_base_url, api_key)
-    
-    # Reset Environment with Retry Loop
-    max_retries = 10
-    retry_delay = 2
     obs = None
     
-    print(f"[DEBUG] Waiting for Env Server at {ENV_URL}...", flush=True)
-    for attempt in range(max_retries):
-        try:
-            # CRITICAL: Pass task_id to ensure server switches to the correct grader/config
-            obs_raw = post_json(f"{ENV_URL}/reset", payload={"task_id": TASK_NAME})
-            obs = obs_raw.get("observation") if "observation" in obs_raw else obs_raw
-            if obs:
-                print(f"[DEBUG] Connected to Env Server on attempt {attempt+1}")
-                break
-        except Exception as e:
-            if attempt == max_retries - 1:
-                print(f"[DEBUG] Failed to connect to Env Server after {max_retries} attempts: {e}")
-                log_end(success=False, steps=0, score=0.001, rewards=[])
-                return
-            import time
-            time.sleep(retry_delay)
-            retry_delay = min(10, retry_delay * 1.5)
-
     try:
+        # Reset Environment
+        obs_raw = post_json(f"{ENV_URL}/reset", payload={"task_id": task_id})
+        obs = obs_raw.get("observation") if "observation" in obs_raw else obs_raw
+        
         for step in range(1, MAX_STEPS + 1):
             candidates = obs.get("candidates", [])
             health = obs.get("health_metrics", {})
@@ -262,20 +136,17 @@ def main() -> None:
             action_mask = obs.get("action_mask", [True] * len(candidates))
             
             # Request LLM Action
-            chosen_id = get_model_message(
-                client,
-                api_base_url,
-                api_key,
-                step,
-                candidates,
-                health,
-                cortisol,
-                action_mask,
-            )
+            try:
+                text = _chat_completion(client, API_BASE_URL, api_key, MODEL_NAME, [
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": f"Step: {step}\nHealth: {json.dumps(health)}\nCortisol: {cortisol:.2f}\nChoice ID:"}
+                ])
+                chosen_id = int(text)
+            except:
+                chosen_id = choose_fallback_candidate(candidates, health, cortisol, action_mask)
             
             # Step Environment
-            action_payload = {"selected_item_id": chosen_id}
-            result = post_json(f"{ENV_URL}/step", payload=action_payload)
+            result = post_json(f"{ENV_URL}/step", payload={"selected_item_id": chosen_id})
             obs = result["observation"]
             reward = result["reward"]
             done = result["done"]
@@ -283,21 +154,28 @@ def main() -> None:
             rewards.append(reward)
             steps_taken = step
             score += reward
-            
             log_step(step=step, action=f"select({chosen_id})", reward=reward, done=done, error=None)
-            
-            if done:
-                break
+            if done: break
                 
-        # Clamp score to strictly (0.001, 0.999) to satisfy Meta validator range check
-        score = max(0.001, min(score, 0.999))
+        # Clamp score to strictly (0.01, 0.99)
+        score = max(0.01, min(score, 0.99))
         success = score >= SUCCESS_SCORE_THRESHOLD
         
     except Exception as e:
-        print(f"[DEBUG] Loop exception: {e}")
-        success = False
+        print(f"[DEBUG] Task {task_id} failed: {e}", flush=True)
+        if not rewards: rewards = [0.01]
+        score = 0.01
     finally:
-        log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
+        log_end(task=task_id, success=success, steps=steps_taken, score=score, rewards=rewards)
+
+def main() -> None:
+    if not API_KEY: raise RuntimeError("Missing API key")
+    client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY) if OpenAI is not None else None
+    
+    for task_id in TASKS:
+        print(f"\n[DEBUG] Starting interaction for task: {task_id}", flush=True)
+        run_task(client, API_KEY, task_id)
+        time.sleep(1) # Small gap between tasks
 
 if __name__ == "__main__":
     main()
