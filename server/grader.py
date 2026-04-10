@@ -27,8 +27,8 @@ def _normalize_task_name(task_name: str) -> str:
 
 
 def _clamp_strict(val: float) -> float:
-    """Ensures score is strictly within (0, 1) as required by Meta validator."""
-    return max(0.0001, min(0.9999, val))
+    """Ensures score is strictly between 0 and 1 (non-inclusive) as required by OpenEnv."""
+    return max(0.01, min(0.99, val))
 
 
 class Grader:

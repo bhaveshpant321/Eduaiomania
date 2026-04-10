@@ -3,7 +3,7 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "eudaimonia"
+name = "project-eudaimonia"
 version = "0.1.0"
 description = "OpenEnv benchmark environment for Project Eudaimonia"
 readme = "README.md"
@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [tool.setuptools]
-packages = ["eudaimonia", "eudaimonia.engine", "eudaimonia.server"]
+packages = ["server", "engine"]
 
 [project.scripts]
-server = "eudaimonia.server.app:main"
+server = "server.app:main"
