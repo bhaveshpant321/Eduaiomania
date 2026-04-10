@@ -124,8 +124,16 @@ def run_task(client: Optional[Any], api_key: str, task_id: str) -> None:
     obs = None
     
     try:
-        # Reset Environment with retry
-        obs_raw = post_json(f"{ENV_URL}/reset", payload={"task_id": task_id})
+        # Reset Environment with exponential backoff retry (defensive for cold starts)
+        obs_raw = None
+        for attempt in range(3):
+            try:
+                obs_raw = post_json(f"{ENV_URL}/reset", payload={"task_id": task_id})
+                break
+            except Exception as e:
+                if attempt == 2: raise e
+                time.sleep(2 ** attempt)
+        
         obs = obs_raw.get("observation") if "observation" in obs_raw else obs_raw
         
         for step in range(1, MAX_STEPS + 1):

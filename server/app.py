@@ -348,14 +348,6 @@ def tasks():
                 "expected_score": "0.1-0.3",
                 "grader": "server.grader:grade_hard",
             },
-            {
-                "id": "mastery",
-                "title": "Hard Mastery",
-                "difficulty": "hard",
-                "description": "Extreme mode. Survive the most aggressive algorithmic manipulation.",
-                "expected_score": "0.05-0.2",
-                "grader": "server.grader:grade_mastery",
-            },
         ]
     }
 

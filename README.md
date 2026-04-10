@@ -11,9 +11,14 @@ tags: [openenv]
 
 # 🌿 Project Eudaimonia: An OpenEnv RL Benchmark
 
-**Challenge the "Next-Click" Optimization Paradigm.** 
+**"Retaining the Mind, not just the Click."**
 
-Project Eudaimonia is a high-fidelity simulator of human flourishing vs. digital burnout. Instead of measuring clicks, attention-span, or pure engagement, this environment challenges Reinforcement Learning agents to optimize for long-term psychological well-being. It serves as a Stateful Stochastic Human Digital Twin that models the **"Hedonic Treadmill,"** **"Cognitive Burnout,"** and **"Cumulative Fatigue."**
+Most recommendation benchmarks are optimized for immediate Click-Through Rate (CTR). In the pursuit of that "one more click," algorithms often push users into "Dopamine Traps"—rage-bait, brain-rot, and endless loops that temporarily spike engagement but ultimately lead to **Boredom Churn** or **Stress Burnout**. 
+
+For a business, this is a "Burn-and-Churn" strategy: it's like burning your furniture to keep the house warm. You get a spike in heat now, but eventually, you have no house left.
+
+**Project Eudaimonia isn't an "anti-profit" environment; it’s an environment for Sustainable Profitability.** It recognizes that a user’s mental health is a company’s most valuable long-term asset. We challenge RL agents to optimize for **Sustainable Engagement (LTV)**, proving that a mentally stable, cognitively refreshed user is a more loyal, higher-value customer who returns daily for years, rather than a "burnt out" user who uninstalls forever.
+
 
 ---
 
@@ -124,7 +129,15 @@ The empirical results above highlight exactly why Eudaimonia functions as a robu
 
 3. **The API Fallback Anomaly (\*Mistral 0.589)**: You may notice Mistral scoring an abnormally high 0.589 on `hard-detox`. During benchmarking, the Hugging Face Free API rate-limited the Mistral endpoint, resulting in HTTP 503 errors. Because Eudaimonia employs an explicit programmatic `action_mask` to legally filter out uniquely hostile recommendations when a user is critical, the environment automatically fell back to the safest available masked candidate upon timeout. By "crashing," the LLM unwittingly executed a mathematically flawless safety loop, inadvertently demonstrating that the environment's programmatic Action Space constraint operates exactly as defined! 
 
-   > [!IMPORTANT]  
-   > **Can agents cheat this? No.** While relying on the safe fallback loop artificially extended Mistral's survival (reaching 0.589), it is scientifically impossible to game the environment infinitely. By spamming low-intensity "safe" content, Mistral mathematically crashed the user's baseline `dopamine` below `0.10`, triggering an immediate **Boredom Churn termination** (App Uninstall). This proves the environment's dual-bound Physics Engine works flawlessly—the Action Mask prevents acute cognitive Burnout, but the Boredom threshold ensures agents cannot exploit "safe" paths to victory.
+## 🧠 The "Why": A Heart-to-Heart on Digital Flourishing
 
-> **Created by:** Bhavesh
+Project Eudaimonia didn't start with a research paper. It started with an observation of the people I care about.
+
+I see it every day around me. I see kids—some just starting primary school—getting so deep into "reel addiction" that they become visibly aggressive or distressed the moment the screen is turned off. I see my own peers, people with incredible potential, losing entire evenings to mindless "brain-rot" doomscrolling, leaving them feeling anxious, lethargic, and incapable of focusing on their own life goals. 
+
+I’ve watched our feeds get spammed with rage-bait and hate-content, purely because triggering our "reptilian" stress response is the easiest way to get a quick click. 
+
+**I built Project Eudaimonia because I believe we can do better.** We don't have to choose between a successful platform and a healthy society. By modeling the psychological "Physics" of the human user, we prove that algorithms can be both profitable and nurturing. We can build AI that makes the user "better" for having visited—ensuring they don't just click today, but thrive tomorrow.
+
+---
+**Created by:** Bhavesh

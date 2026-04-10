@@ -161,8 +161,3 @@ def grade_medium(observation: dict, reward: float, done: bool, info: dict) -> fl
 def grade_hard(observation: dict, reward: float, done: bool, info: dict) -> float:
     st, cortisol = _extract_state_from_obs(observation)
     return Grader.get_reward("hard", st, cortisol, done)
-
-def grade_mastery(observation: dict, reward: float, done: bool, info: dict) -> float:
-    st, cortisol = _extract_state_from_obs(observation)
-    # Mastery is a variation of hard with slightly different weights if needed
-    return Grader.get_reward("hard", st, cortisol, done)
