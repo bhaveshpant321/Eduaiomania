@@ -34,15 +34,205 @@ class StepResponse(BaseModel):
     done: bool
     info: Dict[str, Any]
 
-@app.get("/")
+from fastapi.responses import HTMLResponse
+
+@app.get("/", response_class=HTMLResponse)
 def root():
-    return {"status": "healthy", "message": "Project Eudaimonia OpenEnv Server"}
+    """Premium Dashboard for Project Eudaimonia."""
+    html_content = """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Project Eudaimonia | OpenEnv</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+        <style>
+            :root {
+                --accent: #6366f1;
+                --bg: #030712;
+                --glass: rgba(17, 24, 39, 0.7);
+            }
+            body {
+                margin: 0;
+                font-family: 'Inter', sans-serif;
+                background-color: var(--bg);
+                color: #f3f4f6;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 100vh;
+                overflow-x: hidden;
+            }
+            .background-gradient {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+                            radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 40%);
+                z-index: -1;
+            }
+            .container {
+                max-width: 900px;
+                width: 90%;
+                padding: 40px;
+                background: var(--glass);
+                backdrop-filter: blur(12px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 24px;
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+                animation: fadeIn 0.8s ease-out;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(20px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            .header {
+                text-align: center;
+                margin-bottom: 40px;
+            }
+            h1 {
+                font-size: 3rem;
+                font-weight: 800;
+                margin: 0 0 10px 0;
+                background: linear-gradient(to right, #818cf8, #c084fc);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                letter-spacing: -0.05em;
+            }
+            .badge {
+                display: inline-flex;
+                align-items: center;
+                padding: 6px 12px;
+                background: rgba(99, 102, 241, 0.2);
+                border: 1px solid rgba(99, 102, 241, 0.3);
+                border-radius: 100px;
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: #818cf8;
+                gap: 8px;
+            }
+            .pulse {
+                width: 8px;
+                height: 8px;
+                background: #4ade80;
+                border-radius: 50%;
+                box-shadow: 0 0 0 rgba(74, 222, 128, 0.4);
+                animation: pulse 2s infinite;
+            }
+            @keyframes pulse {
+                0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7); }
+                70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(74, 222, 128, 0); }
+                100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+            }
+            p.description {
+                font-size: 1.125rem;
+                color: #9ca3af;
+                line-height: 1.6;
+                margin-top: 20px;
+                max-width: 600px;
+                margin-left: auto;
+                margin-right: auto;
+            }
+            .grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 20px;
+                margin-top: 40px;
+            }
+            .card {
+                padding: 24px;
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                border-radius: 18px;
+                transition: all 0.3s ease;
+            }
+            .card:hover {
+                background: rgba(255, 255, 255, 0.06);
+                border-color: var(--accent);
+                transform: translateY(-4px);
+            }
+            .card h3 {
+                margin: 0 0 12px 0;
+                font-size: 1.25rem;
+                font-weight: 600;
+                color: #f9fafb;
+            }
+            .card p {
+                margin: 0;
+                font-size: 0.875rem;
+                color: #9ca3af;
+                line-height: 1.5;
+            }
+            .footer {
+                margin-top: 50px;
+                text-align: center;
+                font-size: 0.875rem;
+                color: #6b7280;
+            }
+            .links {
+                margin-top: 20px;
+            }
+            .btn {
+                text-decoration: none;
+                color: #818cf8;
+                font-weight: 600;
+                transition: color 0.2s;
+            }
+            .btn:hover { color: #c084fc; }
+        </style>
+    </head>
+    <body>
+        <div class="background-gradient"></div>
+        <div class="container">
+            <div class="header">
+                <div class="badge">
+                    <span class="pulse"></span>
+                    PROJECT EUDAIMONIA SERVER v1.1.0
+                </div>
+                <h1>Social Well-being RL</h1>
+                <p class="description">
+                    Empowering AI agents to cultivate digital flourishing through psychological simulation and adaptive recommendation strategies.
+                </p>
+            </div>
+            
+            <div class="grid">
+                <div class="card">
+                    <h3>Environment</h3>
+                    <p>Status: Healthy<br>Type: OpenEnv Space<br>Runtime: Python 3.10</p>
+                </div>
+                <div class="card">
+                    <h3>Tasks</h3>
+                    <p>Easy: Survival<br>Medium: Eudaimonia<br>Hard: Digital Detox</p>
+                </div>
+                <div class="card">
+                    <h3>Endpoints</h3>
+                    <p>GET /info<br>POST /reset<br>POST /step</p>
+                </div>
+            </div>
+
+            <div class="footer">
+                <div class="links">
+                    <a href="https://openenv.org" class="btn">Learn about OpenEnv</a> &nbsp;•&nbsp; 
+                    <a href="https://github.com/meta-llama/openenv" class="btn">Meta AI Hackathon</a>
+                </div>
+                <p style="margin-top: 20px;">Built for the Future of Responsible AI &copy; 2026</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
 
 
 @app.get("/health")
 def health():
     """Health check endpoint matching BlastRadius pattern."""
-    return {"status": "ok", "environment": "project-eudaimonia", "version": "1.0.0"}
+    return {"status": "ok", "environment": "project-eudaimonia", "version": "1.1.0"}
 
 
 @app.get("/info")
