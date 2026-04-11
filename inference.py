@@ -7,10 +7,7 @@ import urllib.parse
 from typing import Any, List, Optional
 import time
 
-try:
-    from openai import OpenAI
-except ModuleNotFoundError:
-    OpenAI = None
+from openai import OpenAI
 
 # ---------------------------------------------------------------------------
 API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
@@ -50,7 +47,7 @@ def log_step(step: int, action: str, reward: float, done: bool, error: Optional[
     print(f"[STEP] step={step} action={action} reward={reward:.4f} done={done_val} error={error_val}", flush=True)
 
 def log_end(task: str, success: bool, steps: int, score: float, rewards: List[float]) -> None:
-    rewards_str = ",".join(f"{r:.4f}" for r in rewards)
+    rewards_str = "[" + ",".join(f"{r:.4f}" for r in rewards) + "]"
     print(f"[END] task={task} success={str(success).lower()} steps={steps} score={score:.4f} rewards={rewards_str}", flush=True)
 
 # ---------------------------------------------------------------------------
@@ -69,38 +66,15 @@ def post_json(url: str, payload: Optional[dict] = None, timeout: int = 20) -> di
         raw = resp.read().decode("utf-8")
         return json.loads(raw) if raw else {}
 
-def _http_chat_completion(api_base_url: str, api_key: str, model: str, messages: list) -> str:
-    endpoint = f"{api_base_url.rstrip('/')}/chat/completions"
-    payload = {
-        "model": model,
-        "messages": messages,
-        "temperature": 0.7,
-        "max_tokens": 10,
-    }
-    req = urllib.request.Request(
-        url=endpoint,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
-        },
-        method="POST",
+def _chat_completion(client: OpenAI, model: str, messages: list) -> str:
+    """Invokes the LLM strictly using the OpenAI client as per Mandatory Instructions."""
+    completion = client.chat.completions.create(
+        model=model,
+        messages=messages,
+        temperature=0.7,
+        max_tokens=10,
     )
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        raw = resp.read().decode("utf-8")
-        data = json.loads(raw) if raw else {}
-    return ((data.get("choices") or [{}])[0].get("message") or {}).get("content", "")
-
-def _chat_completion(client: Optional[Any], api_base_url: str, api_key: str, model: str, messages: list) -> str:
-    if client is not None:
-        completion = client.chat.completions.create(
-            model=model,
-            messages=messages,
-            temperature=0.7,
-            max_tokens=10,
-        )
-        return (completion.choices[0].message.content or "").strip()
-    return _http_chat_completion(api_base_url=api_base_url, api_key=api_key, model=model, messages=messages).strip()
+    return (completion.choices[0].message.content or "").strip()
 
 def choose_fallback_candidate(candidates: list, health: dict, cortisol: float, action_mask: list) -> int:
     valid = [c for i, c in enumerate(candidates) if i < len(action_mask) and action_mask[i]]
@@ -144,7 +118,7 @@ def run_task(client: Optional[Any], api_key: str, task_id: str) -> None:
             
             # Request LLM Action
             try:
-                text = _chat_completion(client, API_BASE_URL, api_key, MODEL_NAME, [
+                text = _chat_completion(client, MODEL_NAME, [
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user", "content": f"Step: {step}\nHealth: {json.dumps(health)}\nCortisol: {cortisol:.2f}\nChoice ID:"}
                 ])
@@ -177,7 +151,7 @@ def run_task(client: Optional[Any], api_key: str, task_id: str) -> None:
 
 def main() -> None:
     if not API_KEY: raise RuntimeError("Missing API key")
-    client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY) if OpenAI is not None else None
+    client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
     
     for task_id in TASKS:
         print(f"\n[DEBUG] Starting interaction for task: {task_id}", flush=True)
